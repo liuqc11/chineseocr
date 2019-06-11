@@ -96,11 +96,11 @@ def eval_angle(im,detectAngle=False):
     if detectAngle:
         angle = angle_detect(img=np.copy(img))##文字朝向检测
         if angle==90:
-            im = Image.fromarray(im).transpose(Image.ROTATE_90)
+            im = Image.fromarray(img).transpose(Image.ROTATE_90)
         elif angle==180:
-            im = Image.fromarray(im).transpose(Image.ROTATE_180)
+            im = Image.fromarray(img).transpose(Image.ROTATE_180)
         elif angle==270:
-            im = Image.fromarray(im).transpose(Image.ROTATE_270)
+            im = Image.fromarray(img).transpose(Image.ROTATE_270)
         img = np.array(im)
         
     return  angle,img

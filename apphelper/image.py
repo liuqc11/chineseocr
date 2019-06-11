@@ -7,7 +7,7 @@ import sys
 import six
 import os
 import base64
-import requests
+# import requests
 import numpy as np
 import cv2
 from PIL import Image
@@ -593,12 +593,12 @@ def adjust_box_to_origin(img,angle, result):
     """
     调整box到原图坐标
     """
-    h,w = img.shape[:2]
+    w,h = img.size
     if angle in [90,270]:
-        imgW,imgH = img.shape[:2]
+        imgH,imgW = img.size
         
     else:
-        imgH,imgW= img.shape[:2]
+        imgW,imgH= img.size
     newresult = []
     for line in result:
         cx =line['box']['cx']

@@ -1,8 +1,11 @@
+# -*- coding: utf-8 -*-
 """
 火车票
 """
 from apphelper.image import union_rbox
 import re
+
+
 class trainTicket:
     """
     火车票结构化识别
