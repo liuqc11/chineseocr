@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author: lywen
+@author: liuqingchen
 """
 import os
 import cv2
@@ -21,7 +21,7 @@ from apphelper.image import union_rbox,adjust_box_to_origin,xy_rotate_box, box_r
 from application import trainTicket,idcard,invoice,bankcard
 
 
-billList = ['general_OCR','trainticket','idcard','invoice','bankcard']
+billList = ['general_OCR','trainticket','idcard','invoice','bankcard','licenseplate']
 
 class OCR:
     """通用OCR识别"""
@@ -138,8 +138,9 @@ class OCR:
         data = json.loads(data)
         CommandID = data.get('commandID', '')
         billModel = data.get('billModel','')
-        textAngle = data.get('textAngle', True)  ##文字检测
-        textLine = data.get('textLine', False)  ##只进行单行识别
+        # 下面两行兼容原有的web app demo
+        textAngle = data.get('textAngle', True)  ## 文字方向检测
+        textLine = data.get('textLine', False)  ## 只进行单行识别
         if CommandID != '':
             if CommandID == '100001':
                 billModel = 'invoice'
@@ -147,19 +148,39 @@ class OCR:
                 billModel = 'idcard'
             elif CommandID == '300001':
                 billModel = 'bankcard'
+            elif CommandID == '400001':
+                billModel = 'licenseplate'
             else:
+                ## 返回请求参数错误
                 return json.dumps(
-                    {'sessionID': data.get('sessionID', ''), 'commandID': CommandID,
+                    {'sessionID': data.get('sessionID', ''),
+                     'commandID': CommandID,
                      'businessID': data.get('businessID', ''),
                      'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
                      'execStatus': {"statusCode": 0x800003, "statusDescription": "请求参数错误"},
                      'resultInfo': {}}, ensure_ascii=False
                 )
-            picName = data.get('picName','new.jpg')
-            picpath = 'http://172.29.73.70:8099' + data.get('picUrl','') +picName
-            response = requests.get(picpath)
-            img = Image.open(BytesIO(response.content)).convert('RGB')
+            picName = data.get('picName', 'new.jpg')
+            picpath = 'http://172.29.73.70:8099' + data.get('picUrl', '') + picName
+            if picName.endswith(('.jpg','.png','.jpeg','.bmp')):
+                response = requests.get(picpath)
+                img = Image.open(BytesIO(response.content)).convert('RGB')
+            elif picName.endswith(('.mp4','.avi')):
+                with requests.get(picpath, stream=True) as r:
+                    with open(picName,'ab+') as f:
+                        f.write(r.content)
+            else:
+                ## 返回内部数据错误
+                return json.dumps(
+                    {'sessionID': data.get('sessionID', ''),
+                     'commandID': CommandID,
+                     'businessID': data.get('businessID', ''),
+                     'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
+                     'execStatus': {"statusCode": 0x800004, "statusDescription": "内部数据错误"},
+                     'resultInfo': {}}, ensure_ascii=False
+                )
         else:
+            ## 兼容原有的web app demo
             imgString = data['imgString'].encode().split(b';base64,')[-1]
             imgString = base64.b64decode(imgString)
             jobid = uuid.uuid1().__str__()
@@ -167,6 +188,7 @@ class OCR:
             with open(path,'wb') as f:
                 f.write(imgString)
             img = Image.open(path).convert('RGB')##GBR
+
 
         W,H= img.size
         timeTake = time.time()
@@ -220,7 +242,8 @@ class OCR:
             # delete tmp files
             os.remove(picName)
 
-            return json.dumps({'sessionID': data.get('sessionID',''),'commandID': CommandID,
+            return json.dumps({'sessionID': data.get('sessionID',''),
+                               'commandID': CommandID,
                                'businessID': data.get('businessID',''),
                                'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
                                'execStatus': {"statusCode": 0x000000, "statusDescription": "成功"},

@@ -1,18 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="On explicit save action" serverName="cmcc@192.168.17.17:31007" autoUploadExternalChanges="true">
+  <component name="PublishConfigData" autoUpload="On explicit save action" serverName="cmcc@192.168.66.77:31007" autoUploadExternalChanges="true">
     <serverData>
-      <paths name="cmcc@192.168.17.17:31007">
+      <paths name="cmcc@192.168.66.77:31007">
         <serverdata>
           <mappings>
-            <mapping deploy="/yolov3-ocr" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="lqc@192.168.17.17:31001">
-        <serverdata>
-          <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/cmcc/yolov3-ocr" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
