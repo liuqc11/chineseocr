@@ -21,7 +21,7 @@ from apphelper.image import union_rbox,adjust_box_to_origin,xy_rotate_box, box_r
 from application import trainTicket,idcard,invoice,bankcard
 
 
-billList = ['general_OCR','trainticket','idcard','invoice','bankcard','licenseplate']
+billList = ['general_OCR', 'trainticket', 'idcard', 'invoice', 'bankcard', 'licenseplate']
 
 class OCR:
     """通用OCR识别"""
@@ -137,10 +137,14 @@ class OCR:
         data = web.data()
         data = json.loads(data)
         CommandID = data.get('commandID', '')
-        billModel = data.get('billModel','')
-        # 下面两行兼容原有的web app demo
+        BusinessID = data.get('businessID','')
+        SessionID = data.get('sessionID','')
+
+        # 下面三行兼容原有的web app demo
+        billModel = data.get('billModel','') ## 确定具体使用哪种模式识别
         textAngle = data.get('textAngle', True)  ## 文字方向检测
         textLine = data.get('textLine', False)  ## 只进行单行识别
+        # 处理传递参数
         if CommandID != '':
             if CommandID == '100001':
                 billModel = 'invoice'
@@ -153,9 +157,9 @@ class OCR:
             else:
                 ## 返回请求参数错误
                 return json.dumps(
-                    {'sessionID': data.get('sessionID', ''),
+                    {'sessionID': SessionID,
                      'commandID': CommandID,
-                     'businessID': data.get('businessID', ''),
+                     'businessID': BusinessID,
                      'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
                      'execStatus': {"statusCode": 0x800003, "statusDescription": "请求参数错误"},
                      'resultInfo': {}}, ensure_ascii=False
@@ -172,9 +176,9 @@ class OCR:
             else:
                 ## 返回内部数据错误
                 return json.dumps(
-                    {'sessionID': data.get('sessionID', ''),
+                    {'sessionID': SessionID,
                      'commandID': CommandID,
-                     'businessID': data.get('businessID', ''),
+                     'businessID': BusinessID,
                      'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
                      'execStatus': {"statusCode": 0x800004, "statusDescription": "内部数据错误"},
                      'resultInfo': {}}, ensure_ascii=False
@@ -189,65 +193,69 @@ class OCR:
                 f.write(imgString)
             img = Image.open(path).convert('RGB')##GBR
 
-
-        W,H= img.size
-        timeTake = time.time()
-        if textLine:
-            ##单行识别
-            partImg = Image.fromarray(img)
-            text = model.crnnOcr(partImg.convert('L'))
-            res =[ {'text':text,'name':'0','box':[0,0,W,0,W,H,0,H]} ]
-
+        if billModel == 'licenseplate':
+            pass
         else:
-            detectAngle = textAngle
-            _,result,angle= model.model(img,
-                                        detectAngle=detectAngle,##是否进行文字方向检测，通过web传参控制
-                                        config=dict(MAX_HORIZONTAL_GAP=50,##字符之间的最大间隔，用于文本行的合并
-                                        MIN_V_OVERLAPS=0.6,
-                                        MIN_SIZE_SIM=0.6,
-                                        TEXT_PROPOSALS_MIN_SCORE=0.1,
-                                        TEXT_PROPOSALS_NMS_THRESH=0.3,
-                                        TEXT_LINE_NMS_THRESH = 0.7,##文本行之间测iou值
-                                                ),
-                                        leftAdjust=True,##对检测的文本行进行向左延伸
-                                        rightAdjust=True,##对检测的文本行进行向右延伸
-                                        alph=0.01,##对检测的文本行进行向右、左延伸的倍数
-                                       )
-            res = self.format_text(result,img,angle,billModel,CommandID)
+            W, H = img.size
+            timeTake = time.time()
+            if textLine:
+                ##单行识别
+                partImg = Image.fromarray(img)
+                text = model.crnnOcr(partImg.convert('L'))
+                res = [{'text': text, 'name': '0', 'box': [0, 0, W, 0, W, H, 0, H]}]
 
-        timeTake = time.time() - timeTake
-        if CommandID == '':
-            os.remove(path)
-            return json.dumps({'res': res, 'timeTake': round(timeTake, 4)}, ensure_ascii=False)
-        else:
-            if timeTake > 15:
-                return json.dumps(
-                    {'sessionID': data.get('sessionID', ''), 'commandID': CommandID,
-                     'businessID': data.get('businessID', ''),
-                     'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
-                     'execStatus': {"statusCode": 0x800001, "statusDescription": "响应超时"},
-                     'resultInfo': {}}, ensure_ascii=False
-                )
-            # save and upload the box pic
-            outpic = self.plot_boxes(img, angle, result, color=(0, 0, 0))
-            outpic.save(picName)
-            upload_url = 'http://172.29.73.70:8099'+'/cmcc-ocr-webapi-1.0/service/remoteUploadPic/'
-            files = {'image': (picName, open(picName, 'rb'), 'image/jpeg', {})}
-            reply = requests.post(upload_url, files=files)
-            # get the picUrl and picName
-            reply = reply.json()
-            # print(reply)
-            res['picUrl'] = reply['picUrl']
-            res['picName']= reply['picName']
-            # delete tmp files
-            os.remove(picName)
+            else:
+                detectAngle = textAngle
+                _, result, angle = model.model(img,
+                                               detectAngle=detectAngle,  ##是否进行文字方向检测，通过web传参控制
+                                               config=dict(MAX_HORIZONTAL_GAP=50,  ##字符之间的最大间隔，用于文本行的合并
+                                                           MIN_V_OVERLAPS=0.6,
+                                                           MIN_SIZE_SIM=0.6,
+                                                           TEXT_PROPOSALS_MIN_SCORE=0.1,
+                                                           TEXT_PROPOSALS_NMS_THRESH=0.3,
+                                                           TEXT_LINE_NMS_THRESH=0.7,  ##文本行之间测iou值
+                                                           ),
+                                               leftAdjust=True,  ##对检测的文本行进行向左延伸
+                                               rightAdjust=True,  ##对检测的文本行进行向右延伸
+                                               alph=0.01,  ##对检测的文本行进行向右、左延伸的倍数
+                                               )
+                res = self.format_text(result, img, angle, billModel, CommandID)
 
-            return json.dumps({'sessionID': data.get('sessionID',''),
-                               'commandID': CommandID,
-                               'businessID': data.get('businessID',''),
-                               'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
-                               'execStatus': {"statusCode": 0x000000, "statusDescription": "成功"},
-                               'resultInfo': res}, ensure_ascii=False)
+            timeTake = time.time() - timeTake
+            if CommandID == '':
+                os.remove(path)
+                return json.dumps({'res': res, 'timeTake': round(timeTake, 4)}, ensure_ascii=False)
+            else:
+                if timeTake > 15:
+                    return json.dumps(
+                        {'sessionID': SessionID,
+                         'commandID': CommandID,
+                         'businessID': BusinessID,
+                         'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
+                         'execStatus': {"statusCode": 0x800001, "statusDescription": "响应超时"},
+                         'resultInfo': {}}, ensure_ascii=False
+                    )
+                # save and upload the box pic
+                outpic = self.plot_boxes(img, angle, result, color=(0, 0, 0))
+                outpic.save(picName)
+                upload_url = 'http://172.29.73.70:8099' + '/cmcc-ocr-webapi-1.0/service/remoteUploadPic/'
+                files = {'image': (picName, open(picName, 'rb'), 'image/jpeg', {})}
+                reply = requests.post(upload_url, files=files)
+                # get the picUrl and picName
+                reply = reply.json()
+                # print(reply)
+                res['picUrl'] = reply['picUrl']
+                res['picName'] = reply['picName']
+                # delete tmp files
+                os.remove(picName)
+
+                return json.dumps({'sessionID': SessionID,
+                                   'commandID': CommandID,
+                                   'businessID': BusinessID,
+                                   'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
+                                   'execStatus': {"statusCode": 0x000000, "statusDescription": "成功"},
+                                   'resultInfo': res}, ensure_ascii=False)
+
         
 
 urls = ('/ocr', 'OCR',)

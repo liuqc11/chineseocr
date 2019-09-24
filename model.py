@@ -18,7 +18,7 @@ from glob import glob
 from text.detector.detectors import TextDetector
 from apphelper.image import get_boxes,letterbox_image
 
-from text.opencv_dnn_detect import angle_detect##文字方向检测,支持dnn/tensorflow
+from text.opencv_dnn_detect import angle_detect ##文字方向检测,支持dnn/tensorflow
 from apphelper.image import estimate_skew_angle ,rotate_cut_img,xy_rotate_box,sort_box,box_rotate,solve
 
 if opencvFlag=='opencv':
