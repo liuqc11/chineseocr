@@ -1,5 +1,5 @@
 FROM ubuntu
-MAINTAINER https://github.com/chineseocr/chineseocr
+MAINTAINER liuqingchen@chinamobile.com
 LABEL version="1.0"
 EXPOSE 8080
 RUN apt-get update

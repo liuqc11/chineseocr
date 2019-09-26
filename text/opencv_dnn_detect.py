@@ -10,6 +10,7 @@ if opencvFlag=='keras':
     import tensorflow as tf
     from tensorflow.python.platform import gfile
     config = tf.ConfigProto(allow_soft_placement=True)
+    config.gpu_options.per_process_gpu_memory_fraction = 0.2
     sess = tf.Session(config=config)
     with gfile.FastGFile(AngleModelPb, 'rb') as f:
             graph_def = tf.GraphDef()
@@ -22,8 +23,8 @@ if opencvFlag=='keras':
 
     
 else:
-   angleNet = cv2.dnn.readNetFromTensorflow(AngleModelPb,AngleModelPbtxt)##dnn 文字方向检测
-textNet  = cv2.dnn.readNetFromDarknet(yoloCfg,yoloWeights)##文字定位
+    angleNet = cv2.dnn.readNetFromTensorflow(AngleModelPb,AngleModelPbtxt)##dnn 文字方向检测
+    textNet  = cv2.dnn.readNetFromDarknet(yoloCfg,yoloWeights)##文字定位,只有选择opencvFlag=='opencv'才调用
 
 def text_detect(img):
     thresh = 0
@@ -53,7 +54,6 @@ def text_detect(img):
                         boxes.append([left, top,left+width, top+height ])
         
     return np.array(boxes),np.array(confidences)
-
 
 
 def angle_detect_dnn(img,adjust=True):

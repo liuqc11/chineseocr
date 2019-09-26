@@ -4,6 +4,10 @@ from crnn.utils import strLabelConverter,resizeNormalize
 from crnn.network_keras import keras_crnn as CRNN
 import tensorflow as tf
 graph = tf.get_default_graph()##解决web.py 相关报错问题
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.2
+set_session(tf.Session(config=config))
 
 from crnn import keys
 from config import ocrModelKeras

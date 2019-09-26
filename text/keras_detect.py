@@ -10,6 +10,10 @@ from PIL import Image
 import numpy as np
 import tensorflow as tf
 graph = tf.get_default_graph()##解决web.py 相关报错问题
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.2
+set_session(tf.Session(config=config))
 
 anchors = [float(x) for x in keras_anchors.split(',')]
 anchors = np.array(anchors).reshape(-1, 2)

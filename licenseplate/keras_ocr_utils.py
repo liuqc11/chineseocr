@@ -2,6 +2,12 @@
 import cv2
 from keras.layers import *
 from keras.models import *
+import tensorflow as tf
+graph = tf.get_default_graph()##解决web.py 相关报错问题
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.2
+set_session(tf.Session(config=config))
 
 chars = [u"京", u"沪", u"津", u"渝", u"冀", u"晋", u"蒙", u"辽", u"吉", u"黑", u"苏", u"浙", u"皖", u"闽", u"赣", u"鲁", u"豫", u"鄂",
          u"湘", u"粤", u"桂",
@@ -145,7 +151,8 @@ class LPR():
         x_tempx = cv2.imread(src)
         x_temp = cv2.resize(x_tempx, (164, 48))
         x_temp = x_temp.transpose(1, 0, 2)
-        y_pred = self.modelSeqRec.predict(np.array([x_temp]))
+        with graph.as_default():
+            y_pred = self.modelSeqRec.predict(np.array([x_temp]))
         y_pred = y_pred[:, 2:, :]
         return self.fastdecode(y_pred)
 
@@ -153,7 +160,8 @@ class LPR():
         x_tempx = src
         x_temp = cv2.resize(x_tempx, (164, 48))
         x_temp = x_temp.transpose(1, 0, 2)
-        y_pred = self.modelSeqRec.predict(np.array([x_temp]))
+        with graph.as_default():
+            y_pred = self.modelSeqRec.predict(np.array([x_temp]))
         y_pred = y_pred[:, 2:, :]
         return self.fastdecode(y_pred)
 

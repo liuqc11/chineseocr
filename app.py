@@ -119,12 +119,17 @@ class OCR:
                 res = {key: res[key] for key in res}
             else:
                 res = [{'text': res[key], 'name': key, 'box': {}} for key in res]
+        elif billModel == 'licenseplate':
+            if CommandID != '':
+                res = {'carNo': list(textbox), 'picUrl': '', 'picName': ''}
+            else:
+                res = [{'text': text, 'name': 'carNo', 'box': {}} for text in list(textbox)]
 
         return res
 
     def GET(self):
         post = {}
-        post['postName'] = 'ocr'##请求地址
+        post['postName'] = 'ocr'
         post['height'] = 1920
         post['H'] = 1920
         post['width'] = 1080
@@ -166,44 +171,29 @@ class OCR:
                 )
             picName = data.get('picName', 'new.jpg')
             picpath = 'http://172.29.73.70:8099' + data.get('picUrl', '') + picName
-            if picName.endswith(('.jpg','.png','.jpeg','.bmp')):
-                response = requests.get(picpath)
-                img = Image.open(BytesIO(response.content)).convert('RGB')
-            elif picName.endswith(('.mp4','.avi')):
-                with requests.get(picpath, stream=True) as r:
-                    with open(picName,'ab+') as f:
-                        f.write(r.content)
-            else:
-                ## 返回内部数据错误
-                return json.dumps(
-                    {'sessionID': SessionID,
-                     'commandID': CommandID,
-                     'businessID': BusinessID,
-                     'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
-                     'execStatus': {"statusCode": 0x800004, "statusDescription": "内部数据错误"},
-                     'resultInfo': {}}, ensure_ascii=False
-                )
+            response = requests.get(picpath)
+            img = Image.open(BytesIO(response.content)).convert('RGB')
         else:
             ## 兼容原有的web app demo
             imgString = data['imgString'].encode().split(b';base64,')[-1]
             imgString = base64.b64decode(imgString)
             jobid = uuid.uuid1().__str__()
             path = 'test/{}.jpg'.format(jobid)
-            with open(path,'wb') as f:
+            with open(path,'wb+') as f:
                 f.write(imgString)
             img = Image.open(path).convert('RGB')##GBR
 
-        if billModel == 'licenseplate':
-            pass
+        W, H = img.size
+        timeTake = time.time()
+        if textLine:
+            ##单行识别
+            partImg = Image.fromarray(img)
+            text = model.crnnOcr(partImg.convert('L'))
+            res = [{'text': text, 'name': '0', 'box': [0, 0, W, 0, W, H, 0, H]}]
         else:
-            W, H = img.size
-            timeTake = time.time()
-            if textLine:
-                ##单行识别
-                partImg = Image.fromarray(img)
-                text = model.crnnOcr(partImg.convert('L'))
-                res = [{'text': text, 'name': '0', 'box': [0, 0, W, 0, W, H, 0, H]}]
-
+            if billModel == 'licenseplate':
+                img, result = model.model_lp(img)
+                res = self.format_text(result, img, 0, billModel, CommandID)
             else:
                 detectAngle = textAngle
                 _, result, angle = model.model(img,
@@ -221,40 +211,45 @@ class OCR:
                                                )
                 res = self.format_text(result, img, angle, billModel, CommandID)
 
-            timeTake = time.time() - timeTake
-            if CommandID == '':
-                os.remove(path)
-                return json.dumps({'res': res, 'timeTake': round(timeTake, 4)}, ensure_ascii=False)
-            else:
-                if timeTake > 15:
-                    return json.dumps(
-                        {'sessionID': SessionID,
-                         'commandID': CommandID,
-                         'businessID': BusinessID,
-                         'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
-                         'execStatus': {"statusCode": 0x800001, "statusDescription": "响应超时"},
-                         'resultInfo': {}}, ensure_ascii=False
-                    )
-                # save and upload the box pic
-                outpic = self.plot_boxes(img, angle, result, color=(0, 0, 0))
-                outpic.save(picName)
-                upload_url = 'http://172.29.73.70:8099' + '/cmcc-ocr-webapi-1.0/service/remoteUploadPic/'
-                files = {'image': (picName, open(picName, 'rb'), 'image/jpeg', {})}
-                reply = requests.post(upload_url, files=files)
-                # get the picUrl and picName
-                reply = reply.json()
-                # print(reply)
-                res['picUrl'] = reply['picUrl']
-                res['picName'] = reply['picName']
-                # delete tmp files
-                os.remove(picName)
+        timeTake = time.time() - timeTake
 
-                return json.dumps({'sessionID': SessionID,
-                                   'commandID': CommandID,
-                                   'businessID': BusinessID,
-                                   'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
-                                   'execStatus': {"statusCode": 0x000000, "statusDescription": "成功"},
-                                   'resultInfo': res}, ensure_ascii=False)
+        ## 输出，同样区分是否是原有的web app demo接口
+        if CommandID == '':
+            os.remove(path)
+            return json.dumps({'res': res, 'timeTake': round(timeTake, 4)}, ensure_ascii=False)
+        else:
+            if timeTake > 15:
+                return json.dumps(
+                    {'sessionID': SessionID,
+                     'commandID': CommandID,
+                     'businessID': BusinessID,
+                     'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
+                     'execStatus': {"statusCode": 0x800001, "statusDescription": "响应超时"},
+                     'resultInfo': {}}, ensure_ascii=False
+                )
+            # save and upload the box pic
+            if billModel == 'licenseplate':
+                outpic = Image.fromarray(img)
+            else:
+                outpic = self.plot_boxes(img, angle, result, color=(0, 0, 0))
+            outpic.save(picName)
+            upload_url = 'http://172.29.73.70:8099' + '/cmcc-ocr-webapi-1.0/service/remoteUploadPic/'
+            files = {'image': (picName, open(picName, 'rb'), 'image/jpeg', {})}
+            reply = requests.post(upload_url, files=files)
+            # get the picUrl and picName
+            reply = reply.json()
+            # print(reply)
+            res['picUrl'] = reply['picUrl']
+            res['picName'] = reply['picName']
+            # delete tmp files
+            os.remove(picName)
+
+            return json.dumps({'sessionID': SessionID,
+                               'commandID': CommandID,
+                               'businessID': BusinessID,
+                               'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
+                               'execStatus': {"statusCode": 0x000000, "statusDescription": "成功"},
+                               'resultInfo': res}, ensure_ascii=False)
 
         
 

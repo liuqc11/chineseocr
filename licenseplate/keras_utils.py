@@ -7,6 +7,12 @@ import numpy as np
 from licenseplate.label import Label
 from licenseplate.projection_utils import getRectPts, find_T_matrix
 from licenseplate.utils import getWH, nms
+import tensorflow as tf
+graph = tf.get_default_graph()##解决web.py 相关报错问题
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.2
+set_session(tf.Session(config=config))
 
 
 class DLabel(Label):
@@ -107,7 +113,8 @@ def detect_lp(model, I, max_dim, net_step, out_size, threshold):
     T = T.reshape((1, T.shape[0], T.shape[1], T.shape[2]))
 
     start = time.time()
-    Yr = model.predict(T)
+    with graph.as_default():
+        Yr = model.predict(T)
     Yr = np.squeeze(Yr)
     elapsed = time.time() - start
 
