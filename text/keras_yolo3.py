@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 YOLO_v3 Model Defined in Keras.
 Reference: https://github.com/qqwweee/keras-yolo3.git

@@ -4,6 +4,7 @@
 import torch
 import torch.nn as nn
 import collections
+## train 网络时用util
 
 
 class strLabelConverter(object):

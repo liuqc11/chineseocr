@@ -1,11 +1,13 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 YOLO_v3 Model Defined in Keras.
 Reference: https://github.com/qqwweee/keras-yolo3.git
 """
-from config import kerasTextModel,IMGSIZE,keras_anchors,class_names,GPU,GPUID
+from config import kerasTextModel,IMGSIZE,keras_anchors,class_names
 from text.keras_yolo3 import yolo_text,box_layer,K
 
-from apphelper.image import resize_im,letterbox_image
+from apphelper.image import resize_im
 from PIL import Image
 import numpy as np
 import tensorflow as tf

@@ -7,7 +7,7 @@ if not GPU:
 if ocrFlag=='torch':
     from crnn.crnn_torch import crnnOcr as crnnOcr ##torch版本ocr,目前在使用
 elif ocrFlag=='keras':
-     from crnn.crnn_keras import crnnOcr as crnnOcr ##keras版本OCR
+     from crnn.network_keras import CRNN as crnnOcr ##keras版本OCR
     
 import time
 import cv2

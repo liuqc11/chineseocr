@@ -1,8 +1,8 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import os
-import sys, os
+import sys
 pwd = os.getcwd()
-import numpy as np
-from PIL import Image
 
 from config import yoloCfg,yoloWeights,yoloData,darknetRoot,GPU,GPUID
 os.chdir(darknetRoot)
