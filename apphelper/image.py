@@ -332,26 +332,19 @@ def box_rotate(box, angle=0, imgH=0, imgW=0):
     return (x1_, y1_, x2_, y2_, x3_, y3_, x4_, y4_)
 
 
-def rotate_cut_img(im, degree, box, w, h, leftAdjust=False, rightAdjust=False, alph=0.2):
-    x1, y1, x2, y2, x3, y3, x4, y4 = box[:8]
-    x_center, y_center = np.mean([x1, x2, x3, x4]), np.mean([y1, y2, y3, y4])
-    degree_ = degree * 180.0 / np.pi
-    right = 0
-    left = 0
-    if rightAdjust:
-        right = 1
-    if leftAdjust:
-        left = 1
+def rotate_cut_img(im, box, leftAdjustAlph=0.0, rightAdjustAlph=0.0):
+    angle, w, h, cx, cy = solve(box)
+    degree_ = angle * 180.0 / np.pi
 
-    box = (max(1, x_center - w / 2 - left * alph * (w / 2))  ##xmin
-           , y_center - h / 2,  ##ymin
-           min(x_center + w / 2 + right * alph * (w / 2), im.size[0] - 1)  ##xmax
-           , y_center + h / 2)  ##ymax
-
+    box = (max(1, cx - w / 2 - leftAdjustAlph * (w / 2))  ##xmin
+           , cy - h / 2,  ##ymin
+           min(cx + w / 2 + rightAdjustAlph * (w / 2), im.size[0] - 1)  ##xmax
+           , cy + h / 2)  ##ymax
     newW = box[2] - box[0]
     newH = box[3] - box[1]
-    tmpImg = im.rotate(degree_, center=(x_center, y_center)).crop(box)
-    return tmpImg, newW, newH
+    tmpImg = im.rotate(degree_, center=(cx, cy)).crop(box)
+    box = {'cx': cx, 'cy': cy, 'w': newW, 'h': newH, 'degree': degree_, }
+    return tmpImg, box
 
 
 def estimate_skew_angle(raw):
@@ -456,7 +449,17 @@ def get_boxes(bboxes):
         text_recs[index, 7] = y4
         index = index + 1
 
-    return text_recs
+    boxes = []
+    for box in text_recs:
+           x1,y1 = (box[0],box[1])
+           x2,y2 = (box[2],box[3])
+           x3,y3 = (box[6],box[7])
+           x4,y4 = (box[4],box[5])
+           boxes.append([x1,y1,x2,y2,x3,y3,x4,y4])
+    boxes = np.array(boxes)
+
+    return boxes
+
 
 
 def union_rbox(result, alpha=0.1):
@@ -525,12 +528,12 @@ def adjust_box_to_origin(img, angle, result):
     """
     调整box到原图坐标
     """
-    w, h = img.size
+    h,w = img.shape[:2]
     if angle in [90, 270]:
-        imgH, imgW = img.size
+        imgW,imgH = img.shape[:2]
 
     else:
-        imgW, imgH = img.size
+        imgH,imgW= img.shape[:2]
     newresult = []
     for line in result:
         cx = line['box']['cx']

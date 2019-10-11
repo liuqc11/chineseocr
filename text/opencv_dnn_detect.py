@@ -66,7 +66,7 @@ def angle_detect_dnn(img, adjust=True):
     """
     文字方向检测
     """
-    h, w = img.shape[:2]
+    h,w = img.shape[:2]
     ROTATE = [0, 90, 180, 270]
     if adjust:
         thesh = 0.05
@@ -88,7 +88,7 @@ def angle_detect_tf(img, adjust=True):
     """
     文字方向检测
     """
-    h, w = img.shape[:2]
+    h,w = img.shape[:2]
     ROTATE = [0, 90, 180, 270]
     if adjust:
         thesh = 0.05

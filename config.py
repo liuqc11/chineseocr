@@ -26,7 +26,7 @@ AngleModelFlag  = 'opencv'  ## opencv or tf
 
 ########################文字检测########################
 ##文字检测引擎
-opencvFlag = 'keras' ##keras,opencv,darknet，模型性能 keras>darknet>opencv
+yoloTextFlag = 'keras' ##keras,opencv,darknet，模型性能 keras>darknet>opencv
 IMGSIZE = (608,608)## yolo3 输入图像尺寸
 
 ############## keras yolo  ##############
@@ -63,8 +63,8 @@ ocrModelKeras = os.path.join(pwd,"models","ocr-dense-keras.h5")##keras版本OCR�
 #         ocrModel = os.path.join(pwd,"models","ocr-english.pth")
 ##转换keras模型 参考tools目录
 ocrModelKerasDense       = os.path.join(pwd,"models","ocr-dense-keras.h5")
-ocrModelKerasLstm        = os.path.join(pwd,"models","ocr-lstm.h5")
-ocrModelKerasEng         = os.path.join(pwd,"models","ocr-english.h5")
+ocrModelKerasLstm        = os.path.join(pwd,"models","ocr-lstm-keras.h5")
+ocrModelKerasEng         = os.path.join(pwd,"models","ocr-english-keras.h5")
 
 ocrModelTorchLstm        = os.path.join(pwd,"models","ocr-lstm.pth")
 ocrModelTorchDense       = os.path.join(pwd,"models","ocr-dense.pth")

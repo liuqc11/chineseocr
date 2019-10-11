@@ -14,11 +14,114 @@ import requests
 from PIL import Image
 from io import BytesIO
 web.config.debug= False
-import model
+
+filelock='file.lock'
+if os.path.exists(filelock):
+   os.remove(filelock)
+
+# import model
 render = web.template.render('templates', base='base')
-# from config import DETECTANGLE
-from apphelper.image import union_rbox,adjust_box_to_origin,xy_rotate_box, box_rotate
+from config import *
+from apphelper.image import union_rbox,adjust_box_to_origin,xy_rotate_box, box_rotate,base64_to_PIL
 from application import trainTicket,idcard,invoice,bankcard
+
+if yoloTextFlag == 'keras' or AngleModelFlag == 'tf' or ocrFlag == 'keras':
+    if GPU:
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(GPUID)
+        import tensorflow as tf
+        from keras import backend as K
+
+        config = tf.ConfigProto()
+        config.gpu_options.allocator_type = 'BFC'
+        config.gpu_options.per_process_gpu_memory_fraction = 0.3  ## GPU最大占用量
+        config.gpu_options.allow_growth = False  ##GPU是否可动态增加
+        K.set_session(tf.Session(config=config))
+        K.get_session().run(tf.global_variables_initializer())
+
+    else:
+        ##CPU启动
+        os.environ["CUDA_VISIBLE_DEVICES"] = ''
+
+if yoloTextFlag == 'opencv':
+    scale, maxScale = IMGSIZE
+    from text.opencv_dnn_detect import text_detect
+elif yoloTextFlag == 'darknet':
+    scale, maxScale = IMGSIZE
+    from text.darknet_detect import text_detect
+elif yoloTextFlag == 'keras':
+    scale, maxScale = IMGSIZE[0], 2048
+    from text.keras_detect import text_detect
+else:
+    print("err,text engine in keras\opencv\darknet")
+
+from text.opencv_dnn_detect import angle_detect
+
+if ocr_redis:
+    ##多任务并发识别
+    from apphelper.redisbase import redisDataBase
+
+    ocr = redisDataBase().put_values
+else:
+    from crnn.keys import alphabetChinese, alphabetEnglish
+
+    if ocrFlag == 'keras':
+        from crnn.network_keras import CRNN
+
+        if chineseModel:
+            alphabet = alphabetChinese
+            if LSTMFLAG:
+                ocrModel = ocrModelKerasLstm
+            else:
+                ocrModel = ocrModelKerasDense
+        else:
+            ocrModel = ocrModelKerasEng
+            alphabet = alphabetEnglish
+            LSTMFLAG = True
+
+    elif ocrFlag == 'torch':
+        from crnn.network_torch import CRNN
+
+        if chineseModel:
+            alphabet = alphabetChinese
+            if LSTMFLAG:
+                ocrModel = ocrModelTorchLstm
+            else:
+                ocrModel = ocrModelTorchDense
+
+        else:
+            ocrModel = ocrModelTorchEng
+            alphabet = alphabetEnglish
+            LSTMFLAG = True
+    elif ocrFlag == 'opencv':
+        from crnn.network_dnn import CRNN
+
+        ocrModel = ocrModelOpencv
+        alphabet = alphabetChinese
+    else:
+        print("err,ocr engine in keras\opencv\darknet")
+
+    nclass = len(alphabet) + 1
+    if ocrFlag == 'opencv':
+        crnn = CRNN(alphabet=alphabet)
+    else:
+        crnn = CRNN(32, 1, nclass, 256, leakyRelu=False, lstmFlag=LSTMFLAG, GPU=GPU, alphabet=alphabet)
+    if os.path.exists(ocrModel):
+        crnn.load_weights(ocrModel)
+    else:
+        print("download model or tranform model with tools!")
+
+    ocr = crnn.predict_job
+
+from TextOcrModel import TextOcrModel
+model = TextOcrModel(ocr,text_detect,angle_detect)
+
+from LicenseplateOcrModel import LicenseplateOcrModel
+vehicle_weights = b'darknet/yolov3.weights'
+vehicle_netcfg = b'darknet/cfg/yolov3.cfg'
+vehicle_dataset = b'darknet/cfg/coco.data'
+licensemodel = 'models/wpod-net_update1.h5'
+ocrmodel = 'models/ocr_plate_all_gru.h5'
+model_lp = LicenseplateOcrModel(vehicle_weights, vehicle_netcfg, vehicle_dataset, licensemodel, ocrmodel)
 
 
 billList = ['general_OCR', 'trainticket', 'idcard', 'invoice', 'bankcard', 'licenseplate']
@@ -176,46 +279,53 @@ class OCR:
         else:
             ## 兼容原有的web app demo
             imgString = data['imgString'].encode().split(b';base64,')[-1]
-            imgString = base64.b64decode(imgString)
-            jobid = uuid.uuid1().__str__()
-            path = 'test/{}.jpg'.format(jobid)
-            with open(path,'wb+') as f:
-                f.write(imgString)
-            img = Image.open(path).convert('RGB')##GBR
+            # imgString = base64.b64decode(imgString)
+            # jobid = uuid.uuid1().__str__()
+            # path = 'test/{}.jpg'.format(jobid)
+            # with open(path,'wb+') as f:
+            #     f.write(imgString)
+            # img = Image.open(path).convert('RGB')##GBR
+            img = base64_to_PIL(imgString)
 
-        W, H = img.size
+        if img is not None:
+            img = np.array(img)
+
+        H, W = img.shape[:2]
         timeTake = time.time()
         if textLine:
             ##单行识别
             partImg = Image.fromarray(img)
-            text = model.crnnOcr(partImg.convert('L'))
+            # text = model.crnnOcr(partImg.convert('L'))
+            text = crnn.predict(partImg.convert('L'))
             res = [{'text': text, 'name': '0', 'box': [0, 0, W, 0, W, H, 0, H]}]
         else:
             if billModel == 'licenseplate':
-                img, result = model.model_lp(img)
+                img = Image.fromarray(img)
+                img, result = model_lp.model(img)
                 res = self.format_text(result, img, 0, billModel, CommandID)
             else:
                 detectAngle = textAngle
-                _, result, angle = model.model(img,
-                                               detectAngle=detectAngle,  ##是否进行文字方向检测，通过web传参控制
-                                               config=dict(MAX_HORIZONTAL_GAP=50,  ##字符之间的最大间隔，用于文本行的合并
-                                                           MIN_V_OVERLAPS=0.6,
-                                                           MIN_SIZE_SIM=0.6,
-                                                           TEXT_PROPOSALS_MIN_SCORE=0.1,
-                                                           TEXT_PROPOSALS_NMS_THRESH=0.3,
-                                                           TEXT_LINE_NMS_THRESH=0.7,  ##文本行之间测iou值
-                                                           ),
-                                               leftAdjust=True,  ##对检测的文本行进行向左延伸
-                                               rightAdjust=True,  ##对检测的文本行进行向右延伸
-                                               alph=0.01,  ##对检测的文本行进行向右、左延伸的倍数
-                                               )
+                result, angle = model.model(img,
+                                            scale=scale,
+                                            maxScale=maxScale,
+                                            detectAngle=detectAngle,  ##是否进行文字方向检测，通过web传参控制
+                                            MAX_HORIZONTAL_GAP=100,  ##字符之间的最大间隔，用于文本行的合并
+                                            MIN_V_OVERLAPS=0.6,
+                                            MIN_SIZE_SIM=0.6,
+                                            TEXT_PROPOSALS_MIN_SCORE=0.1,
+                                            TEXT_PROPOSALS_NMS_THRESH=0.3,
+                                            TEXT_LINE_NMS_THRESH=0.99,  ##文本行之间测iou值
+                                            LINE_MIN_SCORE=0.1,
+                                            leftAdjustAlph=0.01,  ##对检测的文本行进行向左延伸
+                                            rightAdjustAlph=0.01,  ##对检测的文本行进行向右延伸
+                                            )
                 res = self.format_text(result, img, angle, billModel, CommandID)
 
         timeTake = time.time() - timeTake
 
         ## 输出，同样区分是否是原有的web app demo接口
         if CommandID == '':
-            os.remove(path)
+            # os.remove(path)
             return json.dumps({'res': res, 'timeTake': round(timeTake, 4)}, ensure_ascii=False)
         else:
             if timeTake > 15:
