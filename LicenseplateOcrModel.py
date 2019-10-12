@@ -88,3 +88,24 @@ class LicenseplateOcrModel(object):
                 draw_label(img, lcar, color=YELLOW, thickness=3)
         return img, result_set
 
+    def model_video(self, video_path, output_path):
+        vid = cv2.VideoCapture(video_path)
+        video_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+        video_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        video_fps = vid.get(cv2.CAP_PROP_FPS)
+        fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+        videoWriter = cv2.VideoWriter(output_path, fourcc, int(video_fps),
+                                      (int(video_width), int(video_height)))
+        result = set()
+        while True:
+            return_value, arr = vid.read()
+            if not return_value:
+                break
+            arr, result_set = self.model(arr)
+            result.update(result_set)
+            videoWriter.write(arr)
+        videoWriter.release()
+        return result
+
+
+

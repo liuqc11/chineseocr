@@ -33,7 +33,7 @@ if yoloTextFlag == 'keras' or AngleModelFlag == 'tf' or ocrFlag == 'keras':
 
         config = tf.ConfigProto()
         config.gpu_options.allocator_type = 'BFC'
-        config.gpu_options.per_process_gpu_memory_fraction = 0.3  ## GPU最大占用量
+        config.gpu_options.per_process_gpu_memory_fraction = 0.2  ## GPU最大占用量
         config.gpu_options.allow_growth = False  ##GPU是否可动态增加
         K.set_session(tf.Session(config=config))
         K.get_session().run(tf.global_variables_initializer())
@@ -279,12 +279,6 @@ class OCR:
         else:
             ## 兼容原有的web app demo
             imgString = data['imgString'].encode().split(b';base64,')[-1]
-            # imgString = base64.b64decode(imgString)
-            # jobid = uuid.uuid1().__str__()
-            # path = 'test/{}.jpg'.format(jobid)
-            # with open(path,'wb+') as f:
-            #     f.write(imgString)
-            # img = Image.open(path).convert('RGB')##GBR
             img = base64_to_PIL(imgString)
 
         if img is not None:
