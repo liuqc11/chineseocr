@@ -7,7 +7,6 @@ import cv2
 import json
 import time
 import uuid
-import base64
 import web
 import numpy as np
 import requests
@@ -33,7 +32,7 @@ if yoloTextFlag == 'keras' or AngleModelFlag == 'tf' or ocrFlag == 'keras':
 
         config = tf.ConfigProto()
         config.gpu_options.allocator_type = 'BFC'
-        config.gpu_options.per_process_gpu_memory_fraction = 0.2  ## GPU最大占用量
+        config.gpu_options.per_process_gpu_memory_fraction = 0.15  ## GPU最大占用量，测试预留8G显存较好
         config.gpu_options.allow_growth = False  ##GPU是否可动态增加
         K.set_session(tf.Session(config=config))
         K.get_session().run(tf.global_variables_initializer())
@@ -274,8 +273,44 @@ class OCR:
                 )
             picName = data.get('picName', 'new.jpg')
             picpath = 'http://172.29.73.70:8099' + data.get('picUrl', '') + picName
-            response = requests.get(picpath)
-            img = Image.open(BytesIO(response.content)).convert('RGB')
+            response = requests.get(picpath, stream=True)
+            ## 处理可能出现的视频（只可能出现在‘licenseplate’中）
+            if picName.endswith(('.jpg', '.png', '.jpeg', '.JPG','.JPEG','.PNG')):
+                img = Image.open(BytesIO(response.content)).convert('RGB')
+            elif picName.endswith(('.mp4','.MP4','.avi','.AVI')) and billModel == 'licenseplate':
+                with open(picName, 'w+') as f:
+                    f.write(response.content)
+                saveName = picName.split('.')[0]+'_new.mp4'
+                result = model_lp.model_video(picName,saveName)
+                res = {'carNo': list(result), 'picUrl': '', 'picName': ''}
+                upload_url = 'http://172.29.73.70:8099' + '/cmcc-ocr-webapi-1.0/service/remoteUploadPic/'
+                files = {'video': (saveName, open(saveName, 'rb'), 'application/octet-stream')}
+                reply = requests.post(upload_url, files=files)
+                # get the picUrl and picName
+                reply = reply.json()
+                # print(reply)
+                res['picUrl'] = reply['picUrl']
+                res['picName'] = reply['picName']
+                # delete tmp files
+                os.remove(picName)
+                os.remove(saveName)
+
+                return json.dumps({'sessionID': SessionID,
+                                   'commandID': CommandID,
+                                   'businessID': BusinessID,
+                                   'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
+                                   'execStatus': {"statusCode": 0x000000, "statusDescription": "成功"},
+                                   'resultInfo': res}, ensure_ascii=False)
+            else:
+                ## 返回请求参数错误
+                return json.dumps(
+                    {'sessionID': SessionID,
+                     'commandID': CommandID,
+                     'businessID': BusinessID,
+                     'timeStamp': time.strftime('%Y%m%d%H%M%S', time.localtime()),
+                     'execStatus': {"statusCode": 0x800004, "statusDescription": "内部数据错误"},
+                     'resultInfo': {}}, ensure_ascii=False
+                )
         else:
             ## 兼容原有的web app demo
             imgString = data['imgString'].encode().split(b';base64,')[-1]

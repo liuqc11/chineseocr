@@ -50,7 +50,7 @@ ocr_redis = False##是否多任务执行OCR识别加速 如果多任务，则配
 ##OCR模型是否调用LSTM层
 LSTMFLAG = True ##是否启用LSTM crnn模型
 ocrFlag = 'torch' ##ocr模型 支持 keras,torch版本
-chineseModel = True ##模型选择 True:中英文模型 False:英文模型
+chineseModel = True##模型选择 True:中英文模型 False:英文模型
 ocrModelKeras = os.path.join(pwd,"models","ocr-dense-keras.h5")##keras版本OCR，暂时支持dense
 
 # if chinsesModel:
