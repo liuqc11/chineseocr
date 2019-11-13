@@ -139,14 +139,14 @@ class OCR:
     def plot_boxes(self, img, angle, result, color=(0, 0, 0)):
         tmp = np.array(img)
         c = color
-        w , h = img.size
+        h, w = tmp.shape[:2]
         thick = int((h + w) / 300)
         i = 0
         if angle in [90, 270]:
-            imgH, imgW = img.size
+            imgW, imgH = tmp.shape[:2]
 
         else:
-            imgW, imgH = img.size
+            imgH, imgW = tmp.shape[:2]
 
         for line in result:
             cx = line['cx']
@@ -278,13 +278,13 @@ class OCR:
             if picName.endswith(('.jpg', '.png', '.jpeg', '.JPG','.JPEG','.PNG')):
                 img = Image.open(BytesIO(response.content)).convert('RGB')
             elif picName.endswith(('.mp4','.MP4','.avi','.AVI')) and billModel == 'licenseplate':
-                with open(picName, 'w+') as f:
+                with open(picName, 'wb+') as f:
                     f.write(response.content)
                 saveName = picName.split('.')[0]+'_new.mp4'
                 result = model_lp.model_video(picName,saveName)
                 res = {'carNo': list(result), 'picUrl': '', 'picName': ''}
                 upload_url = 'http://172.29.73.70:8099' + '/cmcc-ocr-webapi-1.0/service/remoteUploadPic/'
-                files = {'video': (saveName, open(saveName, 'rb'), 'application/octet-stream')}
+                files = {'image': (saveName, open(saveName, 'rb'), 'image/jpeg', {})}
                 reply = requests.post(upload_url, files=files)
                 # get the picUrl and picName
                 reply = reply.json()
@@ -292,8 +292,8 @@ class OCR:
                 res['picUrl'] = reply['picUrl']
                 res['picName'] = reply['picName']
                 # delete tmp files
-                os.remove(picName)
-                os.remove(saveName)
+                # os.remove(picName)
+                #os.remove(saveName)
 
                 return json.dumps({'sessionID': SessionID,
                                    'commandID': CommandID,

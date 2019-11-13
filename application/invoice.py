@@ -36,12 +36,12 @@ class invoice:
             txt = self.result[i]['text'].replace(' ', '')
             txt = txt.replace(' ', '')
             ## 发票代码是10位或12位数字（2018年之后）
-            res = re.findall('发票代码:\d{10,12}', txt)
+            res = re.findall('发票代码:(\d{10}|\d{12})', txt)
             if len(res) > 0:
                 invoicecode['invoiceCode'] = res[0].replace('发票代码:', '')
                 self.res.update(invoicecode)
                 break
-            res = re.fullmatch('\d{10,12}', txt)
+            res = re.fullmatch('(\d{10}|\d{12})', txt)
             if res:
                 invoicecode['invoiceCode'] = txt
                 self.res.update(invoicecode)

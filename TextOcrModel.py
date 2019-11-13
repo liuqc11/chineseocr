@@ -33,7 +33,7 @@ class TextOcrModel(object):
 
     def detect_box(self, img, scale=600, maxScale=900):
         """
-        detect text angle in [0,90,180,270]
+        detect text content
         @@img:np.array
         """
         boxes, scores = self.textModel(img, scale, maxScale)

@@ -7,6 +7,7 @@
 @File    : LicenseplateOcrModel.py
 """
 import numpy as np
+from  PIL import Image
 import cv2
 ## 用于车牌识别
 import darknet.darknet as dn
@@ -45,7 +46,7 @@ class LicenseplateOcrModel(object):
         self.license_model = load_model(licensemodel)
         self.ocr_model = LPR(ocrmodel)
 
-    def model(self, img):
+    def model(self, img: Image) -> (np.array, set):
         W, H = img.size
         img = np.asarray(img)
         result_set = set()
@@ -94,16 +95,23 @@ class LicenseplateOcrModel(object):
         video_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
         video_fps = vid.get(cv2.CAP_PROP_FPS)
         fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-        videoWriter = cv2.VideoWriter(output_path, fourcc, int(video_fps),
+        videoWriter = cv2.VideoWriter(output_path, fourcc, int(video_fps//5),
                                       (int(video_width), int(video_height)))
         result = set()
+        frame_count = 0
         while True:
             return_value, arr = vid.read()
             if not return_value:
                 break
-            arr, result_set = self.model(arr)
-            result.update(result_set)
-            videoWriter.write(arr)
+            if frame_count % 5 == 0:
+                tmpimage = Image.fromarray(cv2.cvtColor(arr, cv2.COLOR_BGR2RGB))
+                tmpimage, result_set = self.model(tmpimage)
+                result.update(result_set)
+                newimage = cv2.cvtColor(np.asarray(tmpimage),cv2.COLOR_RGB2BGR)
+                videoWriter.write(newimage)
+            else:
+                pass
+            frame_count = frame_count+1
         videoWriter.release()
         return result
 
