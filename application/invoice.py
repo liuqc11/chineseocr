@@ -12,8 +12,8 @@ class invoice:
     """
 
     def __init__(self, result):
-        self.result = result
-        # self.result = union_rbox(result, 0.25)
+        # self.result = result
+        self.result = union_rbox(result, 0.2)
         self.N = len(self.result)
         self.res = {'invoiceCode': '', 'invoiceNo': '', 'invoiceDate': '', 'invoiceAmount': '', 'buyerName': '', 'buyerTaxNo': '',
                     'sellerName': '', 'sellerTaxNo': '', 'picUrl': '', 'picName': ''}

@@ -31,7 +31,7 @@ class bankcard:
             ## 信用卡的位数一般都是16位
             res = re.findall('[bB\.\d]{16,19}', txt)
             if len(res) > 0:
-                bankcardno['bankCardNo'] = res[0]
+                bankcardno['bankCardNo'] = res[0].replace('b','6').replace('B','8')
                 self.res.update(bankcardno)
                 break
 

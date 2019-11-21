@@ -12,6 +12,7 @@ import numpy as np
 import requests
 from PIL import Image
 from io import BytesIO
+from apphelper.MyLog import Log
 web.config.debug= False
 
 filelock='file.lock'
@@ -127,6 +128,8 @@ billList = ['general_OCR', 'trainticket', 'idcard', 'invoice', 'bankcard', 'lice
 
 class OCR:
     """通用OCR识别"""
+    def __init__(self, ):
+        self.logger = web.ctx.environ['wsgilog.logger']  # 使用日志 #
 
     def plot_box(self, img, boxes):
         blue = (0, 0, 0)  # 18
@@ -168,6 +171,7 @@ class OCR:
             mess = str(i)
             cv2.putText(tmp, mess, (int(cx), int(cy)), 0, 1e-3 * h, c, thick // 2)
             i += 1
+
         return Image.fromarray(tmp)
 
     def format_text(self, textbox, img, angle, billModel='general_OCR', CommandID= ''):
@@ -230,6 +234,7 @@ class OCR:
         return res
 
     def GET(self):
+        self.logger.info('request to open the ocr page.')
         post = {}
         post['postName'] = 'ocr'
         post['height'] = 1920
@@ -251,8 +256,10 @@ class OCR:
         billModel = data.get('billModel','') ## 确定具体使用哪种模式识别
         textAngle = data.get('textAngle', True)  ## 文字方向检测
         textLine = data.get('textLine', False)  ## 只进行单行识别
+
         # 处理传递参数
         if CommandID != '':
+            self.logger.info('post request from JiuTian IP= %s ,CommandID=%s' % (web.ctx.get('ip'), CommandID))
             if CommandID == '100001':
                 billModel = 'invoice'
             elif CommandID == '200001':
@@ -272,7 +279,7 @@ class OCR:
                      'resultInfo': {}}, ensure_ascii=False
                 )
             picName = data.get('picName', 'new.jpg')
-            picpath = 'http://172.29.73.70:8099' + data.get('picUrl', '') + picName
+            picpath = 'http://172.31.201.35:18081' + data.get('picUrl', '') + picName
             response = requests.get(picpath, stream=True)
             ## 处理可能出现的视频（只可能出现在‘licenseplate’中）
             if picName.endswith(('.jpg', '.png', '.jpeg', '.JPG','.JPEG','.PNG')):
@@ -283,7 +290,7 @@ class OCR:
                 saveName = picName.split('.')[0]+'_new.mp4'
                 result = model_lp.model_video(picName,saveName)
                 res = {'carNo': list(result), 'picUrl': '', 'picName': ''}
-                upload_url = 'http://172.29.73.70:8099' + '/cmcc-ocr-webapi-1.0/service/remoteUploadPic/'
+                upload_url = 'http://172.31.201.35:18081' + '/cmcc-ocr-webapi-1.0/service/remoteUploadPic/'
                 files = {'image': (saveName, open(saveName, 'rb'), 'image/jpeg', {})}
                 reply = requests.post(upload_url, files=files)
                 # get the picUrl and picName
@@ -355,6 +362,9 @@ class OCR:
         ## 输出，同样区分是否是原有的web app demo接口
         if CommandID == '':
             # os.remove(path)
+            # print(res)
+            # outpic = self.plot_boxes(img, angle, result, color=(0, 0, 0))
+            # outpic.save('new.jpg')
             return json.dumps({'res': res, 'timeTake': round(timeTake, 4)}, ensure_ascii=False)
         else:
             if timeTake > 15:
@@ -372,7 +382,7 @@ class OCR:
             else:
                 outpic = self.plot_boxes(img, angle, result, color=(0, 0, 0))
             outpic.save(picName)
-            upload_url = 'http://172.29.73.70:8099' + '/cmcc-ocr-webapi-1.0/service/remoteUploadPic/'
+            upload_url = 'http://172.31.201.35:18081' + '/cmcc-ocr-webapi-1.0/service/remoteUploadPic/'
             files = {'image': (picName, open(picName, 'rb'), 'image/jpeg', {})}
             reply = requests.post(upload_url, files=files)
             # get the picUrl and picName
@@ -395,6 +405,5 @@ class OCR:
 urls = ('/ocr', 'OCR',)
 
 if __name__ == "__main__":
-
       app = web.application(urls, globals())
-      app.run()
+      app.run(Log)
