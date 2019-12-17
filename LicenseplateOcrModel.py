@@ -87,6 +87,30 @@ class LicenseplateOcrModel(object):
                         result_set.add(res)
             for i, lcar in enumerate(Lcars):
                 draw_label(img, lcar, color=YELLOW, thickness=3)
+        # 如果没检测到车，就直接检测-识别车牌(需要改进)
+        # ToDO
+        else:
+            # print('Searching for license plates using WPOD-NET')
+            ratio = float(max(W,H)) / min(W,H)
+            side = int(ratio * 288.)
+            bound_dim = min(side + (side % (2 ** 4)), 608)
+            # print("\t\tBound dim: %d, ratio: %f" % (bound_dim, ratio))
+            Llp, LlpImgs, _ = detect_lp(self.license_model, img / 255.0, bound_dim, 2 ** 4, (240, 80),
+                                        0.5)
+            if len(LlpImgs):
+                Ilp = LlpImgs[0]
+                res, confidence = self.ocr_model.recognizeOneframe(Ilp * 255.)
+                ptspx = Llp[0].pts * np.array(img.shape[1::-1], dtype=float).reshape(2, 1)
+                draw_losangle(img, ptspx, RED, 3)
+                if confidence > 0.5:
+                    llp = Label(0, tl=Llp[0].pts.min(1), br=Llp[0].pts.max(1))
+                    img = write2img(img, llp, res)
+                    result_set.add(res)
+            # 没检测到车牌，就直接尝试识别车牌
+            else:
+                res, confidence = self.ocr_model.recognizeOneframe(img)
+                if confidence > 0.5:
+                    result_set.add(res)
         return img, result_set
 
     def model_video(self, video_path, output_path):
