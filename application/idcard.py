@@ -87,13 +87,16 @@ class idcard:
             txt = self.result[i]['text'].replace(' ','')
             txt = txt.replace(' ','')
             ##出生年月
-            res = re.findall('出生\d*年\d*月\d*日',txt)
-            res = re.findall('\d*年\d*月\d*日',txt)
+            res = re.findall('出生\d+年\d+月\d+日',txt)
+            res = re.findall('\d+年\d+月\d+日',txt)
             
             if len(res)>0:
                 birth['birthday']  =res[0].replace('出生','').replace('年','-').replace('月','-').replace('日','')
                 self.res.update(birth) 
                 break
+        if self.res['birthday'] == '':
+            self.res['birthday'] = self.res['idNumber'][6:10]+'-'+ \
+                                   self.res['idNumber'][10:12]+'-'+self.res['idNumber'][12:14]
                 
     def birthNo(self):
         """
