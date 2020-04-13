@@ -6,9 +6,9 @@ Created on Thu Jul  4 09:07:10 2019
 @author: xingyu
 """
 
-from model.LPRNET import LPRNet, CHARS
-from model.STN import STNet
-from data.load_data import LPRDataLoader, collate_fn
+from licenseplate.LPRNet.model.LPRNET import LPRNet, CHARS
+from licenseplate.LPRNet.model.STN import STNet
+from licenseplate.LPRNet.data.load_data import LPRDataLoader, collate_fn
 import torch
 from torch.utils.data import DataLoader
 import numpy as np

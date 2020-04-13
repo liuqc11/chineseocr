@@ -12,7 +12,7 @@ import numpy as np
 import requests
 from PIL import Image
 from io import BytesIO
-from apphelper.MyLog import Log
+#from apphelper.MyLog import Log
 web.config.debug= False
 
 filelock='file.lock'
@@ -33,7 +33,7 @@ if yoloTextFlag == 'keras' or AngleModelFlag == 'tf' or ocrFlag == 'keras':
 
         config = tf.ConfigProto()
         config.gpu_options.allocator_type = 'BFC'
-        config.gpu_options.per_process_gpu_memory_fraction = 0.15  ## GPU最大占用量，测试预留8G显存较好
+        config.gpu_options.per_process_gpu_memory_fraction = 0.1  ## GPU最大占用量，测试预留8G显存较好
         config.gpu_options.allow_growth = False  ##GPU是否可动态增加
         K.set_session(tf.Session(config=config))
         K.get_session().run(tf.global_variables_initializer())
@@ -55,6 +55,7 @@ else:
     print("err,text engine in keras\opencv\darknet")
 
 from text.opencv_dnn_detect import angle_detect
+#angle_detect = None
 
 if ocr_redis:
     ##多任务并发识别
@@ -128,8 +129,8 @@ billList = ['general_OCR', 'trainticket', 'idcard', 'invoice', 'bankcard', 'lice
 
 class OCR:
     """通用OCR识别"""
-    def __init__(self, ):
-        self.logger = web.ctx.environ['wsgilog.logger']  # 使用日志 #
+    # def __init__(self, ):
+        # self.logger = web.ctx.environ['wsgilog.logger']  # 使用日志 #
 
     def plot_box(self, img, boxes):
         blue = (0, 0, 0)  # 18
@@ -234,7 +235,7 @@ class OCR:
         return res
 
     def GET(self):
-        self.logger.info('request to open the ocr page.')
+        # self.logger.info('request to open the ocr page.')
         post = {}
         post['postName'] = 'ocr'
         post['height'] = 1920
@@ -254,12 +255,12 @@ class OCR:
 
         # 下面三行兼容原有的web app demo
         billModel = data.get('billModel','') ## 确定具体使用哪种模式识别
-        textAngle = data.get('textAngle', True)  ## 文字方向检测
+        textAngle = data.get('textAngle', False)  ## 文字方向检测
         textLine = data.get('textLine', False)  ## 只进行单行识别
 
         # 处理传递参数
         if CommandID != '':
-            self.logger.info('post request from JiuTian IP= %s ,CommandID=%s' % (web.ctx.get('ip'), CommandID))
+            # self.logger.info('post request from JiuTian IP= %s ,CommandID=%s' % (web.ctx.get('ip'), CommandID))
             if CommandID == '100001':
                 billModel = 'invoice'
             elif CommandID == '200001':
@@ -406,4 +407,4 @@ urls = ('/ocr', 'OCR',)
 
 if __name__ == "__main__":
       app = web.application(urls, globals())
-      app.run(Log)
+      app.run()

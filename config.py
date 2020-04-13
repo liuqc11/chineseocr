@@ -17,9 +17,9 @@ GPUID=0##调用GPU序号
 
 ######################文字方向检测######################
 ##vgg文字方向检测模型
-DETECTANGLE=True##是否进行文字方向检测
-AngleModelPb = os.path.join(pwd,"models","Angle-model.pb")
-AngleModelPbtxt = os.path.join(pwd,"models","Angle-model.pbtxt")
+DETECTANGLE=False##是否进行文字方向检测
+AngleModelPb = os.path.join(pwd,"models","Angle_Detection","Angle-model.pb")
+AngleModelPbtxt = os.path.join(pwd,"models","Angle_Detection","Angle-model.pbtxt")
 AngleModelFlag  = 'opencv'  ## opencv or tf
 ######################文字方向检测######################
 
@@ -33,14 +33,14 @@ IMGSIZE = (608,608)## yolo3 输入图像尺寸
 ############## keras yolo  ##############
 keras_anchors = '8,11, 8,16, 8,23, 8,33, 8,48, 8,97, 8,139, 8,198, 8,283'
 class_names = ['none','text',]
-kerasTextModel=os.path.join(pwd,"models","text.h5")##keras版本模型权重文件
+kerasTextModel=os.path.join(pwd,"models","Text_Detection","text.h5")##keras版本模型权重文件
 ############## keras yolo  ##############
 
 ############## darknet yolo  ##############
 darknetRoot = os.path.join(os.path.curdir,"darknet")## yolo 安装目录
-yoloCfg     = os.path.join(pwd,"models","text.cfg")
-yoloWeights = os.path.join(pwd,"models","text.weights")
-yoloData    = os.path.join(pwd,"models","text.data")
+yoloCfg     = os.path.join(pwd,"models","Text_Detection","text.cfg")
+yoloWeights = os.path.join(pwd,"models","Text_Detection","text.weights")
+yoloData    = os.path.join(pwd,"models","Text_Detection","text.data")
 ############## darknet yolo  ##############
 ########################文字检测########################
 
@@ -52,7 +52,7 @@ ocr_redis = False##是否多任务执行OCR识别加速 如果多任务，则配
 LSTMFLAG = True ##是否启用LSTM crnn模型
 ocrFlag = 'torch' ##ocr模型 支持 keras,torch版本
 chineseModel = True##模型选择 True:中英文模型 False:英文模型
-ocrModelKeras = os.path.join(pwd,"models","ocr-dense-keras.h5")##keras版本OCR，暂时支持dense
+ocrModelKeras = os.path.join(pwd,"models","Text_Recognition","ocr-dense-keras.h5")##keras版本OCR，暂时支持dense
 
 # if chinsesModel:
 #     if LSTMFLAG:
@@ -63,15 +63,15 @@ ocrModelKeras = os.path.join(pwd,"models","ocr-dense-keras.h5")##keras版本OCR�
 #         ##纯英文模型
 #         ocrModel = os.path.join(pwd,"models","ocr-english.pth")
 ##转换keras模型 参考tools目录
-ocrModelKerasDense       = os.path.join(pwd,"models","ocr-dense-keras.h5")
-ocrModelKerasLstm        = os.path.join(pwd,"models","ocr-lstm-keras.h5")
-ocrModelKerasEng         = os.path.join(pwd,"models","ocr-english-keras.h5")
+ocrModelKerasDense       = os.path.join(pwd,"models","Text_Recognition","ocr-dense-keras.h5")
+ocrModelKerasLstm        = os.path.join(pwd,"models","Text_Recognition","ocr-lstm-keras.h5")
+ocrModelKerasEng         = os.path.join(pwd,"models","Text_Recognition","ocr-english-keras.h5")
 
-ocrModelTorchLstm        = os.path.join(pwd,"models","ocr-lstm.pth")
-ocrModelTorchDense       = os.path.join(pwd,"models","ocr-dense.pth")
-ocrModelTorchEng         = os.path.join(pwd,"models","ocr-english.pth")
+ocrModelTorchLstm        = os.path.join(pwd,"models","Text_Recognition","ocr-lstm.pth")
+ocrModelTorchDense       = os.path.join(pwd,"models","Text_Recognition","ocr-dense.pth")
+ocrModelTorchEng         = os.path.join(pwd,"models","Text_Recognition","ocr-english.pth")
 
-ocrModelOpencv           = os.path.join(pwd,"models","ocr.pb")
+ocrModelOpencv           = os.path.join(pwd,"models","Text_Recognition","ocr.pb")
 ########################OCR模型#########################
 
 TIMEOUT=30##超时时间

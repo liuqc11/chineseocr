@@ -5,9 +5,9 @@ import sys
 pwd = os.getcwd()
 
 from config import yoloCfg,yoloWeights,yoloData,darknetRoot,GPU,GPUID
-os.chdir(darknetRoot)
-sys.path.append('python')
-import darknet as dn
+#os.chdir(darknetRoot)
+#sys.path.append('python')
+import darknet.darknet as dn
 
 
 def array_to_image(arr):

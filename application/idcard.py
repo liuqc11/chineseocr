@@ -16,10 +16,10 @@ class idcard:
         self.res = {'name': '', 'gender': '', 'ethnicity': '', 'birthday': '', 'idNumber': '', 'address': '',
                     'authority': '', 'effectiveDate': '', 'expiryDate': '', 'picUrl': '', 'picName': ''}
         self.full_name()
-        self.gender()
-        self.sex()
-        self.birthday()
         self.birthNo()
+        self.gender()
+        self.ethnicity()
+        self.birthday()
         self.address()
         self.authority()
         self.effecttime()
@@ -39,6 +39,8 @@ class idcard:
                 name['name']=res[0].replace('姓名','')
                 self.res.update(name) 
                 break
+        if self.res['name'] == '':
+            self.res['name'] = self.result[0]['text'].replace(' ','')
 
     def gender(self):
         """
@@ -55,20 +57,25 @@ class idcard:
                 gender["gender"] = res[0].split('性别')[-1]
                 self.res.update(gender)
                 break
+        if '男' not in self.res['gender'] and '女' not in self.res['gender']:
+            if self.res['idNumber'][-2] in {'1','3','5','7','9'}:
+                self.res['gender'] = '男'
+            else:
+                self.res['gender'] = '女'
 
-    def sex(self):
+    def ethnicity(self):
         """
         民族汉
         """
-        sex={}
+        ethnicity={}
         for i in range(self.N):
             txt = self.result[i]['text'].replace(' ','')
             txt = txt.replace(' ','')
             ##民族汉
             res = re.findall(".*民族[\u4e00-\u9fa5]+",txt)
             if len(res)>0:
-                sex["ethnicity"] = res[0].split('民族')[-1]
-                self.res.update(sex) 
+                ethnicity["ethnicity"] = res[0].split('民族')[-1]
+                self.res.update(ethnicity)
                 break
 
     def birthday(self):
@@ -119,12 +126,24 @@ class idcard:
             txt = txt.replace(' ','')
             
             ##身份证地址
-            if '住址' in txt or '省' in txt or '市' in txt or '县' in txt or '街' in txt or '村' in txt or "镇" in txt or "区" in txt or "城" in txt:
+            if '住址' in txt or '省' in txt or '市' in txt or '自治区' in txt or '街' in txt or '村' in txt or "镇" in txt or "区" in txt or "城" in txt:
                 addString.append(txt.replace('住址',''))
-            
-        if len(addString)>0:
-            add['address']  =''.join(addString)
-            self.res.update(add) 
+                txt_cy = self.result[i]['cy']
+                txt_h = self.result[i]['h']
+                for j in range(i+1,self.N):
+                    next_pos_cy = self.result[j]['cy']
+                    next_txt = self.result[j]['text'].replace(' ','')
+                    if next_pos_cy <= (txt_cy + 1.4*(txt_h)):
+                        addString.append(next_txt.replace('住址',''))
+                    else:
+                        break
+                    txt_h = self.result[j]['h']
+                    txt_cy = self.result[j]['cy']
+
+            if len(addString)>0:
+                add['address']  =''.join(addString)
+                self.res.update(add)
+                break
                                 
     def authority(self):
         """

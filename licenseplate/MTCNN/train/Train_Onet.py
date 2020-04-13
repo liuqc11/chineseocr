@@ -3,8 +3,8 @@ sys.path.append('..')
 import os 
 import torch
 from torch.utils.data import Dataset
-from Data_Loading import ListDataset
-from model.MTCNN_nets import ONet
+from licenseplate.MTCNN.train.Data_Loading import ListDataset
+from licenseplate.MTCNN.model.MTCNN_nets import ONet
 import time
 import copy
 import torch.nn as nn
