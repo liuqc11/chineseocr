@@ -57,7 +57,7 @@ class idcard:
                 gender["gender"] = res[0].split('性别')[-1]
                 self.res.update(gender)
                 break
-        if '男' not in self.res['gender'] and '女' not in self.res['gender']:
+        if ('男' not in self.res['gender']) and ('女' not in self.res['gender']) and self.res['idNumber']:
             if self.res['idNumber'][-2] in {'1','3','5','7','9'}:
                 self.res['gender'] = '男'
             else:
@@ -94,7 +94,7 @@ class idcard:
                 birth['birthday']  =res[0].replace('出生','').replace('年','-').replace('月','-').replace('日','')
                 self.res.update(birth) 
                 break
-        if self.res['birthday'] == '':
+        if (self.res['birthday']) == '' and self.res['idNumber']:
             self.res['birthday'] = self.res['idNumber'][6:10]+'-'+ \
                                    self.res['idNumber'][10:12]+'-'+self.res['idNumber'][12:14]
                 

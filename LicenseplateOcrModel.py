@@ -18,33 +18,47 @@ from licenseplate.keras_utils import load_model, detect_lp
 from licenseplate.label import Label
 from licenseplate.utils import crop_region
 
+## MTCNN的车牌模型
+from config import GPUID,GPU
+import torch
+from licenseplate.MTCNN.MTCNN import create_mtcnn_net
+from licenseplate.LPRNet.model.STN import STNet
+from licenseplate.LPRNet.model.LPRNET import LPRNet, CHARS
+from licenseplate.LPRNet.LPRNet_Test import cv2ImgAddText,decode
+
+if torch.cuda.is_available() and GPU:
+    device = "cuda:" + str(GPUID)
+else:
+    device = "cpu"
+
 YELLOW = (0, 255, 255)
 RED = (0, 0, 255)
 
-# vehicle detection model
-# vehicle_threshold = .5
-# vehicle_weights = b'darknet/yolov3.weights'
-# vehicle_netcfg = b'darknet/cfg/yolov3.cfg'
-# vehicle_dataset = b'darknet/cfg/coco.data'
-#
-# vehicle_net = dn.load_net_custom(vehicle_netcfg, vehicle_weights, 0, 1)  # batchsize=1
-# vehicle_meta = dn.load_meta(vehicle_dataset)
-#
-# # license plate detection model
-# wpod_net = load_model('models/wpod-net_update1.h5')
-#
-# # license plate recognition model
-# ocrmodel = LPR("models/ocr_plate_all_gru.h5")
-#
-# print("Loaded license plate model!")
 
 class LicenseplateOcrModel(object):
-    def __init__(self, vehicle_weights, vehicle_netcfg, vehicle_dataset, licensemodel, ocrmodel):
-        self.vehicle_net = dn.load_net_custom(vehicle_netcfg, vehicle_weights, 0, 1)  # batchsize=1
-        self.vehicle_threshold = .5
-        self.vehicle_meta = dn.load_meta(vehicle_dataset)
-        self.license_model = load_model(licensemodel)
-        self.ocr_model = LPR(ocrmodel)
+    # def __init__(self, vehicle_weights, vehicle_netcfg, vehicle_dataset, licensemodel, ocrmodel)
+    def __init__(self):
+        # self.vehicle_net = dn.load_net_custom(vehicle_netcfg, vehicle_weights, 0, 1)  # batchsize=1
+        # self.vehicle_threshold = .5
+        # self.vehicle_meta = dn.load_meta(vehicle_dataset)
+        # self.license_model = load_model(licensemodel)
+        # self.ocr_model = LPR(ocrmodel)
+
+        ## MTCNN
+
+        # STN and LPRNet
+        self.STN = STNet()
+        self.STN.to(device)
+        self.STN.load_state_dict(torch.load('./licenseplate/LPRNet/weights/Final_STN_model.pth',
+                                       map_location=lambda storage, loc: storage))
+        self.STN.eval()
+
+        self.lprnet = LPRNet(class_num=len(CHARS), dropout_rate=0)
+        self.lprnet.to(device)
+        self.lprnet.load_state_dict(
+            torch.load('./licenseplate/LPRNet/weights/Final_LPRNet_model.pth', map_location=lambda storage, loc: storage))
+        self.lprnet.eval()
+
 
     def model(self, img: Image) -> (np.array, set):
         W, H = img.size
@@ -129,7 +143,7 @@ class LicenseplateOcrModel(object):
                 break
             if frame_count % 5 == 0:
                 tmpimage = Image.fromarray(cv2.cvtColor(arr, cv2.COLOR_BGR2RGB))
-                tmpimage, result_set = self.model(tmpimage)
+                tmpimage, result_set = self.model_MTCNN(tmpimage)
                 result.update(result_set)
                 newimage = cv2.cvtColor(np.asarray(tmpimage),cv2.COLOR_RGB2BGR)
                 videoWriter.write(newimage)
@@ -138,6 +152,41 @@ class LicenseplateOcrModel(object):
             frame_count = frame_count+1
         videoWriter.release()
         return result
+
+    def model_MTCNN(self, img) -> (np.array,set):
+        """
+        使用MTCNN-LPRNet进行车牌识别
+        :param img: PIL读取的图像格式
+        :return: img是np.array格式或者OpenCV支持读取的图像，识别的车牌文字集合result_set
+        """
+        # W, H = img.size
+        img = cv2.cvtColor(np.asarray(img),cv2.COLOR_RGB2BGR)
+        result_set = set()
+        mini_lp = (50,15) ## Minimum lp to be detected. derease to increase accuracy. Increase to increase speed
+        ## MTCNN
+        bboxes = create_mtcnn_net(img,mini_lp,device,p_model_path="./licenseplate/MTCNN/weights/pnet_Weights",
+                                  o_model_path="./licenseplate/MTCNN/weights/onet_Weights")
+        for i in range(bboxes.shape[0]):
+            bbox = bboxes[i, :4]
+            x1, y1, x2, y2 = [int(bbox[j]) for j in range(4)]
+            w = int(x2 - x1 + 1.0)
+            h = int(y2 - y1 + 1.0)
+            img_box = np.zeros((h, w, 3))
+            img_box = img[y1:y2 + 1, x1:x2 + 1, :]
+            im = cv2.resize(img_box, (94, 24), interpolation=cv2.INTER_CUBIC)
+            im = (np.transpose(np.float32(im), (2, 0, 1)) - 127.5) * 0.0078125
+            data = torch.from_numpy(im).float().unsqueeze(0).to(device)
+            transfer = self.STN(data)
+            preds = self.lprnet(transfer)
+            preds = preds.cpu().detach().numpy()
+            labels, pred_labels = decode(preds, CHARS)
+            # print(labels[0])
+            result_set.add(labels[0])
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 1)
+            img = cv2ImgAddText(img, labels[0], (x1, y1 - 12), textColor=(255, 255, 0), textSize=15)
+
+
+        return img, result_set
 
 
 

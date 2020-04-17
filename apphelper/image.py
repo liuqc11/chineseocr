@@ -3,7 +3,6 @@
 ##图像相关函数
 @author: chineseocr,liuqingchen
 """
-import six
 import os
 import base64
 import numpy as np
@@ -21,10 +20,7 @@ def base64_to_PIL(string):
     """
     try:
         base64_data = base64.b64decode(string)
-        buf = six.BytesIO()
-        buf.write(base64_data)
-        buf.seek(0)
-        img = Image.open(buf).convert('RGB')
+        img = Image.open(BytesIO(base64_data)).convert('RGB')
         return img
     except:
         return None

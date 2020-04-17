@@ -117,12 +117,13 @@ from TextOcrModel import TextOcrModel
 model = TextOcrModel(ocr,text_detect,angle_detect)
 
 from LicenseplateOcrModel import LicenseplateOcrModel
-vehicle_weights = b'darknet/yolov3.weights'
-vehicle_netcfg = b'darknet/cfg/yolov3.cfg'
-vehicle_dataset = b'darknet/cfg/coco.data'
-licensemodel = 'models/wpod-net_update1.h5'
-ocrmodel = 'models/ocr_plate_all_gru.h5'
-model_lp = LicenseplateOcrModel(vehicle_weights, vehicle_netcfg, vehicle_dataset, licensemodel, ocrmodel)
+# vehicle_weights = b'darknet/yolov3.weights'
+# vehicle_netcfg = b'darknet/cfg/yolov3.cfg'
+# vehicle_dataset = b'darknet/cfg/coco.data'
+# licensemodel = 'models/wpod-net_update1.h5'
+# ocrmodel = 'models/ocr_plate_all_gru.h5'
+# model_lp = LicenseplateOcrModel(vehicle_weights, vehicle_netcfg, vehicle_dataset, licensemodel, ocrmodel)
+model_lp = LicenseplateOcrModel()
 
 
 billList = ['general_OCR', 'trainticket', 'idcard', 'invoice', 'bankcard', 'licenseplate']
@@ -338,7 +339,7 @@ class OCR:
         else:
             if billModel == 'licenseplate':
                 img = Image.fromarray(img)
-                img, result = model_lp.model(img)
+                img, result = model_lp.model_MTCNN(img)
                 res = self.format_text(result, img, 0, billModel, CommandID)
             else:
                 detectAngle = textAngle
