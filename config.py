@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 import logging
-pwd = os.getcwd()
+#pwd = os.getcwd()
+pwd = os.path.abspath(os.path.dirname(__file__))
 
 #######################是否使用GPU######################
 ## GPU选择及启动GPU序号

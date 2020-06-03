@@ -19,7 +19,7 @@ from licenseplate.label import Label
 from licenseplate.utils import crop_region
 
 ## MTCNN的车牌模型
-from config import GPUID,GPU
+from config import GPU
 import torch
 from licenseplate.MTCNN.MTCNN import create_mtcnn_net
 from licenseplate.LPRNet.model.STN import STNet
@@ -27,7 +27,7 @@ from licenseplate.LPRNet.model.LPRNET import LPRNet, CHARS
 from licenseplate.LPRNet.LPRNet_Test import cv2ImgAddText,decode
 
 if torch.cuda.is_available() and GPU:
-    device = "cuda:" + str(GPUID)
+    device = "cuda:0"
 else:
     device = "cpu"
 

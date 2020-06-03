@@ -347,7 +347,7 @@ class OCR:
                                             scale=scale,
                                             maxScale=maxScale,
                                             detectAngle=detectAngle,  ##是否进行文字方向检测，通过web传参控制
-                                            MAX_HORIZONTAL_GAP=100,  ##字符之间的最大间隔，用于文本行的合并
+                                            MAX_HORIZONTAL_GAP=15,  ##字符之间的最大间隔，用于文本行的合并
                                             MIN_V_OVERLAPS=0.6,
                                             MIN_SIZE_SIM=0.6,
                                             TEXT_PROPOSALS_MIN_SCORE=0.1,
