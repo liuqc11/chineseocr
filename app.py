@@ -347,15 +347,15 @@ class OCR:
                                             scale=scale,
                                             maxScale=maxScale,
                                             detectAngle=detectAngle,  ##是否进行文字方向检测，通过web传参控制
-                                            MAX_HORIZONTAL_GAP=15,  ##字符之间的最大间隔，用于文本行的合并
+                                            MAX_HORIZONTAL_GAP=30,  ##字符之间的最大间隔，用于文本行的合并
                                             MIN_V_OVERLAPS=0.6,
                                             MIN_SIZE_SIM=0.6,
-                                            TEXT_PROPOSALS_MIN_SCORE=0.1,
+                                            TEXT_PROPOSALS_MIN_SCORE=0.07,
                                             TEXT_PROPOSALS_NMS_THRESH=0.3,
                                             TEXT_LINE_NMS_THRESH=0.99,  ##文本行之间测iou值
-                                            LINE_MIN_SCORE=0.1,
-                                            leftAdjustAlph=0.01,  ##对检测的文本行进行向左延伸
-                                            rightAdjustAlph=0.01,  ##对检测的文本行进行向右延伸
+                                            LINE_MIN_SCORE=0.07,
+                                            leftAdjustAlph=0.02,  ##对检测的文本行进行向左延伸
+                                            rightAdjustAlph=0.02,  ##对检测的文本行进行向右延伸
                                             )
                 res = self.format_text(result, img, angle, billModel, CommandID)
 
